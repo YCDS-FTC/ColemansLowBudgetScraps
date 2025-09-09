@@ -29,6 +29,7 @@
 
 package org.firstinspires.ftc.teamcode.teleOp;
 
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -37,8 +38,14 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
+import com.qualcomm.hardware.limelightvision.LLStatus;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
 
 
@@ -60,7 +67,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 
 
-public class Turret extends LinearOpMode {
+public class Dodge extends LinearOpMode {
 //    private AnalogInput ranger;
     public DcMotorEx  leftFront;
     public DcMotorEx  rightFront;
@@ -70,6 +77,8 @@ public class Turret extends LinearOpMode {
 
     public AnalogInput rangerLeft;
     public AnalogInput rangerRight;
+
+    public Limelight3A limelight;
 
     @Override
     public void runOpMode() {
@@ -117,7 +126,11 @@ public class Turret extends LinearOpMode {
         double x = 0;
         double rx = 0;
 
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        telemetry.setMsTransmissionInterval(11);
+        limelight.pipelineSwitch(0);
 
+        limelight.start();
 
         while (opModeIsActive()) {
 
@@ -127,19 +140,6 @@ public class Turret extends LinearOpMode {
 //            //double y = 0;
 //            x = gamepad1.left_stick_x;
 //            rx = gamepad1.right_stick_x;
-
-            if (gamepad1.a) {
-                x = 0.3;
-                y = -0.5;
-            }
-
-            if (facing < 0.9) {
-                rx = 0.7;
-            } else if (facing > 1.1) {
-                rx = -0.7;
-            } else {
-                rx = 0;
-            }
 
             double rotX = x * Math.cos(-facing) - y * Math.sin(-facing);
             rotX = rotX * 1.1;
@@ -160,6 +160,26 @@ public class Turret extends LinearOpMode {
 
 // Two sensors around an inch apart to tell which way it is going, and go the opposite way. Keep facing any object that was located
 
+            YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
+            limelight.updateRobotOrientation(orientation.getYaw(AngleUnit.DEGREES));
+            LLResult result = limelight.getLatestResult();
+            if (result != null) {
+                if (result.isValid()) {
+                    Pose3D botpose = result.getBotpose_MT2();
+                    telemetry.addData("id", result.getBotposeTagCount());
+                    telemetry.addData("tx", result.getTx());
+                    telemetry.addData("ty", result.getTy());
+                    telemetry.addData("Botpose", botpose.toString());
+                }
+            }
+
+
+
+
+
         }
+    }
+    public double getDistance (AnalogInput sensor) {
+        return (sensor.getVoltage() * 48.7) - 4.9;
     }
 }
